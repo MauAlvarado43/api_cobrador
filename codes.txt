@@ -1,0 +1,19 @@
+201 Petición atendida con éxito
+301 Usuario no registrado en la base de datos
+302 Usuario sin logearse
+303 Usuario sin privilegios
+304 Cliente con préstamo activo
+305 Fecha incorrecta de pago
+306 Pago ya realizado
+307 Petición mal formada
+401 Error interno
+402 Token no válido
+403 Solicitud mal hecha
+
+
+// 0 -> Aceptado
+// 1 -> En revisión
+// 2 -> Denegado
+// 3 -> Concluido
+// 4 -> Solicitud de rennovación
+// 5 -> Solicitud de aumento de lapso
