@@ -72,9 +72,9 @@ router.post('/getClient', (req, res) => {
 						st: encryptAPI(decryptBD(results[0].st_cli)),
 						ext: encryptAPI(decryptBD(results[0].ext_cli)),
 						_int: encryptAPI(decryptBD(results[0].int_cli)),
-						ine: encryptAPI(fs.readFileSync(decryptBD(results[0].ine_cli), {encoding: 'base64'})),
-						fot: encryptAPI(fs.readFileSync(decryptBD(results[0].fot_cli), {encoding: 'base64'})),
-						cdom: encryptAPI(fs.readFileSync(decryptBD(results[0].cdom_cli), {encoding: 'base64'}))
+						ine: encryptAPI(decryptBD(results[0].ine_cli)),
+						fot: encryptAPI(decryptBD(results[0].fot_cli)),
+						cdom: encryptAPI(decryptBD(results[0].cdom_cli))
 					}
 				})
 			}
@@ -715,8 +715,6 @@ router.post('/getAssigned', (req, res) => {
                 res.send({ code: 401, data: {} })
                 return
             }
-
-            console.log(results[0].id_emp)
 
             let response = []
 

@@ -4,9 +4,11 @@ import syncConnection from '../config/syncDatabase'
 import { decryptAPI, encryptAPI, encryptBD, decryptBD, validateToken } from '../utils/cipher'
 import fs from 'fs'
 
+import { uploadFile, deleteFile, listFiles } from '../utils/cloud'
+
 const router = Router()
 
-router.post('/deleteReport', (req, res) => {
+router.post('/deleteReport', async (req, res) => {
 
     let id = decryptAPI(req.headers.id)
     let type = decryptAPI(req.headers.type)
@@ -41,7 +43,7 @@ router.post('/deleteReport', (req, res) => {
         return
     }
 
-    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
 
         if(err) {
             res.send({code: 401, data: {}})
@@ -53,8 +55,8 @@ router.post('/deleteReport', (req, res) => {
             return
         }
 
-        fs.unlinkSync(`src/files/reports/${file}`)
-        fs.unlinkSync(`src/files/reports/${file.toString().replace('.json','.csv')}`)
+        await deleteFile(file)
+        await deleteFile(file.toString().replace('.json','.csv'))
 
         res.send({code: 201, data: {}})
 
@@ -173,7 +175,7 @@ router.post('/getReport', (req, res) => {
 
 })
 
-router.post('/getReportsName', (req, res) => {
+router.post('/getReportsName', async (req, res) => {
 
     let id = decryptAPI(req.headers.id)
     let type = decryptAPI(req.headers.type)
@@ -206,7 +208,7 @@ router.post('/getReportsName', (req, res) => {
         return
     }
 
-    connection.query('SELECT * from empleado NATURAL JOIN sucursal WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+    connection.query('SELECT * from empleado NATURAL JOIN sucursal WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
 
         if(err) {
             res.send({ code: 401, data: {} })
@@ -218,18 +220,19 @@ router.post('/getReportsName', (req, res) => {
             return
         }
 
-        let files = fs.readdirSync('src/files/reports/')
+        let files = await listFiles()
+
         let filesResponse = []
 
         files.forEach(file => {
           
-            if(file.split('.')[3] == 'json' && _results[0].nom_suc == file.split('___')[0]) {
+            if(file.name.split('.')[3] == 'json' && _results[0].nom_suc == file.name.split('___')[0]) {
 
                 filesResponse.push({
-                    file: file,
-                    sucursal: file.split('___')[0],
-                    date: file.split('___')[1].split('__')[0].replace(/\-/g, '\/'),
-                    hour: file.split('___')[1].split('__')[1].split('json')[0].substring(0, 8).replace(/\./g,'\:')
+                    file: file.name,
+                    sucursal: file.name.split('___')[0],
+                    date: file.name.split('___')[1].split('__')[0].replace(/\-/g, '\/'),
+                    hour: file.name.split('___')[1].split('__')[1].split('json')[0].substring(0, 8).replace(/\./g,'\:')
                 })
 
             }

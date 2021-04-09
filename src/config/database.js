@@ -10,7 +10,6 @@ let connection = mysql.createConnection({
 connection.connect((err,args)=>{
 	if(err)
         console.log(err)
-	
 })
 
 export default connection

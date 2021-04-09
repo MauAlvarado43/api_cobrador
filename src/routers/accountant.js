@@ -4,9 +4,11 @@ import connection from '../config/database'
 import { decryptAPI, encryptAPI, encryptBD, decryptBD, validateToken } from '../utils/cipher'
 import fs from 'fs'
 
+import { uploadFile } from '../utils/cloud'
+
 const router = Router()
 
-router.post('/generateReportLendings', (req, res) => {
+router.post('/generateReportLendings', async (req, res) => {
 
     let id = decryptAPI(req.headers.id)
     let type = decryptAPI(req.headers.type)
@@ -42,7 +44,7 @@ router.post('/generateReportLendings', (req, res) => {
         return
     }
 
-    connection.query('SELECT * FROM empleado NATURAL JOIN sucursal WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+    connection.query('SELECT * FROM empleado NATURAL JOIN sucursal WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
         
         if(err) {
             res.send({ code: 401, data: {} })
@@ -119,7 +121,7 @@ router.post('/generateReportLendings', (req, res) => {
 
         let str = ''
 
-        if(save) {
+        if(save == "true") {
             for(let i = 0; i < report.length + 1; i++) {
 
                 for(let j = 0; j < parseInt(lapse) + 6; j++) {
@@ -174,8 +176,14 @@ router.post('/generateReportLendings', (req, res) => {
                 str += '\n'
             }
 
-            fs.writeFileSync(`src/files/reports/${_results[0].nom_suc}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.json`, JSON.stringify({data: response}), 'utf-8')
-            fs.writeFileSync(`src/files/reports/${_results[0].nom_suc}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.csv`, str, 'utf-8')
+            let jsonName = `src/files/reports/${_results[0].nom_suc}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.json`
+            let csvName = `src/files/reports/${_results[0].nom_suc}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.csv`
+
+            fs.writeFileSync(jsonName, JSON.stringify({data: response}), 'utf-8')
+            fs.writeFileSync(csvName, str, 'utf-8')
+
+            await uploadFile(jsonName)
+            await uploadFile(csvName)
 
         }
         

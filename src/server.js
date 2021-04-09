@@ -54,8 +54,8 @@ server.listen(app.get('port'), '0.0.0.0', () => {
     console.log('Server on port', app.get('port'))
 })
 
-setInterval(() => {
-    fetch(process.env.URL).then( res => { res.text().then( text => {  }) })
-}, 2000 * 6)
+// setInterval(() => {
+//     fetch(process.env.URL + '/').then( res => { res.text().then( text => {  }) })
+// }, 2000 * 6)
 
 export default server

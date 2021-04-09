@@ -4,9 +4,11 @@ import syncConnection from '../config/syncDatabase'
 import { decryptAPI, encryptAPI, encryptBD, decryptBD, validateToken } from '../utils/cipher'
 import fs from 'fs'
 
+import { uploadFile } from '../utils/cloud'
+
 const router = Router()
 
-router.post('/registerClient', (req,res) => {
+router.post('/registerClient', async (req,res) => {
 		
 	let password = encryptBD(decryptAPI(req.headers.password))
 	let rfc = encryptBD(decryptAPI(req.headers.rfc))
@@ -56,7 +58,7 @@ router.post('/registerClient', (req,res) => {
         return
     }
 
-    connection.query('SELECT * FROM empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, results, field) => {
+    connection.query('SELECT * FROM empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, results, field) => {
         
         if(err) {
             res.send({ code: 401, data: {} })
@@ -74,9 +76,13 @@ router.post('/registerClient', (req,res) => {
 			fs.writeFileSync(`src/files/document/${curp}_dom.png`, cdom, 'base64')
 			fs.writeFileSync(`src/files/ine/${curp}_ine.png`, ine, 'base64')
 
+			await uploadFile(`src/files/client/${curp}_client.png`)
+			await uploadFile(`src/files/document/${curp}_dom.png`)
+			await uploadFile(`src/files/ine/${curp}_ine.png`)
+
 			connection.query('INSERT INTO cliente (nom_cli, app_cli, apm_cli, curp_cli, tel_cli, cel_cli, est_cli, mun_cli, col_cli, st_cli, cp_cli, ext_cli, int_cli, fot_cli, cdom_cli, ine_cli, id_tip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 5)', [
 			encryptBD(name), encryptBD(apat), encryptBD(amat), encryptBD(curp), encryptBD(tel), encryptBD(cel), encryptBD(est), encryptBD(mun), encryptBD(col),encryptBD(st), encryptBD(cp),
-			encryptBD(ext), encryptBD(_int), encryptBD(`src/files/client/${curp}_client.png`), encryptBD(`src/files/document/${curp}_dom.png`), encryptBD(`src/files/ine/${curp}_ine.png`)], (err, results, field) => {
+			encryptBD(ext), encryptBD(_int), encryptBD(`${process.env.BUCKET_URL}/${curp}_client.png`), encryptBD(`${process.env.BUCKET_URL}/${curp}_dom.png`), encryptBD(`${process.env.BUCKET_URL}/${curp}_ine.png`)], (err, results, field) => {
 				
 				if(err) {
 					console.log(err)
@@ -398,9 +404,9 @@ router.post('/getClientLendingRennovation', (req, res) => {
 							st: encryptAPI(decryptBD(results[0].st_cli)),
 							ext: encryptAPI(decryptBD(results[0].ext_cli)),
 							_int: encryptAPI(decryptBD(results[0].int_cli)),
-							ine: encryptAPI(fs.readFileSync(decryptBD(results[0].ine_cli), {encoding: 'base64'})),
-							fot: encryptAPI(fs.readFileSync(decryptBD(results[0].fot_cli), {encoding: 'base64'})),
-							cdom: encryptAPI(fs.readFileSync(decryptBD(results[0].cdom_cli), {encoding: 'base64'})),
+							ine: encryptAPI(decryptBD(results[0].ine_cli)),
+							fot: encryptAPI(decryptBD(results[0].fot_cli)),
+							cdom: encryptAPI(decryptBD(results[0].cdom_cli)),
 							amount: encryptAPI(results[0].can_pre.toString()),
 							date: encryptAPI(results[0].fec_pre.getDate().toString() + "/" + (results[0].fec_pre.getMonth() + 1) + "/" + results[0].fec_pre.getFullYear()),
 							tdate: encryptAPI(results[0].tfec_pre.getDate().toString() + "/" + (results[0].tfec_pre.getMonth() + 1) + "/" + results[0].tfec_pre.getFullYear()),
@@ -519,14 +525,14 @@ router.post('/getClientLending', (req, res) => {
 							st: encryptAPI(decryptBD(results[0].st_cli)),
 							ext: encryptAPI(decryptBD(results[0].ext_cli)),
 							_int: encryptAPI(decryptBD(results[0].int_cli)),
-							ine: encryptAPI(fs.readFileSync(decryptBD(results[0].ine_cli), {encoding: 'base64'})),
-							fot: encryptAPI(fs.readFileSync(decryptBD(results[0].fot_cli), {encoding: 'base64'})),
-							cdom: encryptAPI(fs.readFileSync(decryptBD(results[0].cdom_cli), {encoding: 'base64'})),
+							ine: encryptAPI(decryptBD(results[0].ine_cli)),
+							fot: encryptAPI(decryptBD(results[0].fot_cli)),
+							cdom: encryptAPI(decryptBD(results[0].cdom_cli)),
 							amount: encryptAPI(results[0].can_pre.toString()),
 							date: encryptAPI(results[0].fec_pre.getDate().toString() + "/" + (results[0].fec_pre.getMonth() + 1) + "/" + results[0].fec_pre.getFullYear()),
 							tdate: encryptAPI(results[0].tfec_pre.getDate().toString() + "/" + (results[0].tfec_pre.getMonth() + 1) + "/" + results[0].tfec_pre.getFullYear()),
 							comments: encryptAPI(results[0].com_pre),
-							tre_pre: encryptAPI(results[0].tre_pre.toString()),
+							tre_pre: encryptAPI((results[0].tre_pre != null) ? results[0].tre_pre.toString() : results[0].tre_pre),
 							mre_pre: encryptAPI(results[0].mre_pre),
 							est_pre: results[0].est_pre,
 							payments: payments
@@ -610,9 +616,9 @@ router.post('/getClientRevision', (req, res) => {
 						st: encryptAPI(decryptBD(results[0].st_cli)),
 						ext: encryptAPI(decryptBD(results[0].ext_cli)),
 						_int: encryptAPI(decryptBD(results[0].int_cli)),
-						ine: encryptAPI(fs.readFileSync(decryptBD(results[0].ine_cli), {encoding: 'base64'})),
-						fot: encryptAPI(fs.readFileSync(decryptBD(results[0].fot_cli), {encoding: 'base64'})),
-						cdom: encryptAPI(fs.readFileSync(decryptBD(results[0].cdom_cli), {encoding: 'base64'})),
+						ine: encryptAPI(decryptBD(results[0].ine_cli)),
+						fot: encryptAPI(decryptBD(results[0].fot_cli)),
+						cdom: encryptAPI(decryptBD(results[0].cdom_cli)),
 						amount: encryptAPI(results[0].can_pre.toString()),
 						date: encryptAPI(results[0].fec_pre.getDate().toString() + "/" + (results[0].fec_pre.getMonth() + 1) + "/" + results[0].fec_pre.getFullYear()),
 						comments: encryptAPI(results[0].com_pre),
@@ -839,7 +845,7 @@ router.post('/getSucursalTotal', (req, res) => {
 
 })
 
-router.post('/editClient', (req, res) => {
+router.post('/editClient', async (req, res) => {
 
 	let password = encryptBD(decryptAPI(req.headers.password))
 	let rfc = encryptBD(decryptAPI(req.headers.rfc))
@@ -890,7 +896,7 @@ router.post('/editClient', (req, res) => {
         return
     }
 
-    connection.query('SELECT * FROM empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, results, field) => {
+    connection.query('SELECT * FROM empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, results, field) => {
         
         if(err) {
             res.send({ code: 401, data: {} })
@@ -907,6 +913,10 @@ router.post('/editClient', (req, res) => {
 			fs.writeFileSync(`src/files/client/${curp}_client.png`, client, 'base64')
 			fs.writeFileSync(`src/files/document/${curp}_dom.png`, cdom, 'base64')
 			fs.writeFileSync(`src/files/ine/${curp}_ine.png`, ine, 'base64')
+
+			await uploadFile(`src/files/client/${curp}_client.png`)
+			await uploadFile(`src/files/document/${curp}_dom.png`)
+			await uploadFile(`src/files/ine/${curp}_ine.png`)
 
 			connection.query('UPDATE cliente SET nom_cli = ?, app_cli = ?, apm_cli = ?, curp_cli = ?, tel_cli = ?, cel_cli = ?, est_cli = ?, mun_cli = ?, col_cli = ?, st_cli = ?, cp_cli = ?, ext_cli = ?, int_cli = ? WHERE id_cli = ?', [
 			encryptBD(name), encryptBD(apat), encryptBD(amat), encryptBD(curp), encryptBD(tel), encryptBD(cel), encryptBD(est), encryptBD(mun), encryptBD(col),encryptBD(st), encryptBD(cp),

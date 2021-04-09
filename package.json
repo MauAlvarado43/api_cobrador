@@ -12,14 +12,18 @@
     "build": "npm run clean && mkdir dist && babel src -s -d dist",
     "clean": "rm -rf dist/",
     "test": "nodemon --exec mocha src/test/ --reporter spec --require babel-register",
-    "production": "npm run build && node bin/production"
+    "production": "npm run build && node bin/production",
+    "load": "babel-node src/backup.js"
   },
   "nodemonConfig": {
-    "ignore": []
+    "ignore": [
+      "src/files/*"
+    ]
   },
   "keywords": [],
   "author": "Mauricio Alvarado López - Ángel Gabriel Rodríguez Rodríguez",
   "dependencies": {
+    "@google-cloud/storage": "^5.8.3",
     "archiver": "^5.3.0",
     "babel-polyfill": "^6.26.0",
     "body-parser": "^1.19.0",
