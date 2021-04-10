@@ -1,6 +1,6 @@
 import {Router} from 'express'
 import connection from '../config/database'
-import { decryptAPI, encryptAPI, encryptBD, decryptBD, generateToken } from '../utils/cipher'
+import { decryptAPI, encryptAPI, encryptBD, decryptBD, generateToken, validateToken } from '../utils/cipher'
 
 const router = Router()
 
@@ -47,6 +47,63 @@ router.post('/loginUser', async (req, res) => {
 
     })
 
+})
+
+router.post('/updatePassword', (req, res) => {
+
+	let id = decryptAPI(req.headers.id)
+    let type = decryptAPI(req.headers.type)
+    let token = decryptAPI(req.headers.token)
+    let rfc = encryptBD(decryptAPI(req.headers.rfc))
+    let password = encryptBD(decryptAPI(req.headers.password))
+	
+	let pwd = encryptBD(decryptAPI(req.body.pwd))
+	
+	if(!validateToken(token)) {
+        res.send({ code: 402, data: {} })
+        return
+    }
+
+    if(!id) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(!rfc) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(!password) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+	
+	connection.query('SELECT * FROM empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, results, field) => {
+        
+        if(err) {
+            res.send({ code: 401, data: {} })
+            return
+        }
+
+        if(results.length != 1) {
+            res.send({ code: 301, data: {} })
+            return
+        }
+		
+		connection.query('UPDATE empleado SET pwd_emp = ? WHERE id_emp = ?', [pwd, results[0].id_emp], (err, results, fields) => {
+
+            if(err) {
+                res.send({ code: 401, data: {} })
+                return
+            }
+
+            res.send({ code: 201, data: {} })
+
+        })
+		
+	})
+	
 })
 
 module.exports = router
