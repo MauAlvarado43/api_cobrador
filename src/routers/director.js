@@ -4,7 +4,7 @@ import syncConnection from '../config/syncDatabase'
 import { decryptAPI, encryptAPI, encryptBD, decryptBD, validateToken } from '../utils/cipher'
 import fs from 'fs'
 
-import { uploadFile, deleteFile, listFiles } from '../utils/cloud'
+import { uploadFile, deleteFile, listFiles, getFile } from '../utils/cloud'
 
 const router = Router()
 
@@ -117,7 +117,7 @@ router.get('/downloadReport', (req, res) => {
 
 })
 
-router.post('/getReport', (req, res) => {
+router.post('/getReport', async (req, res) => {
 
     let id = decryptAPI(req.headers.id)
     let type = decryptAPI(req.headers.type)
@@ -152,7 +152,7 @@ router.post('/getReport', (req, res) => {
         return
     }
 
-    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
 
         if(err) {
             res.send({ code: 401, data: {} })
@@ -164,7 +164,7 @@ router.post('/getReport', (req, res) => {
             return
         }
 
-        let content = JSON.parse(fs.readFileSync(`src/files/reports/${file}`, 'utf-8'))
+        let content = await getFile(file)
 
         res.send({
             code: 201,

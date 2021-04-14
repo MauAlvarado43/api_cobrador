@@ -1,10 +1,20 @@
 import {Storage} from '@google-cloud/storage'
+import fetch from 'node-fetch'
 
 const storage = new Storage({
     keyFilename: "src/config/key.json"
 });
 
 let bucketName = "cobrador_bucket"
+
+const getFile = async (file) => {
+
+    const res = await fetch(process.env.BUCKET_URL + "/" + file)
+    const json = await res.json()
+
+    return json
+
+}
 
 const listFiles = async () => {
 
@@ -48,4 +58,4 @@ const uploadFile = async(fileName) => {
 
 }
 
-export { getMetadata, uploadFile, deleteFile, listFiles }
+export { getMetadata, uploadFile, deleteFile, listFiles, getFile }

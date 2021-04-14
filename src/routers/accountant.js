@@ -56,7 +56,8 @@ router.post('/generateReportLendings', async (req, res) => {
             return
         }
 
-        let results = syncConnection.query('SELECT DISTINCT id_pre FROM pago NATURAL JOIN prestamo NATURAL JOIN cliente WHERE fec_pag BETWEEN SUBDATE(NOW(), INTERVAL ? DAY) AND NOW()', [15])
+        let results = syncConnection.query('SELECT DISTINCT id_pre FROM pago NATURAL JOIN prestamo NATURAL JOIN cliente WHERE fec_pag BETWEEN SUBDATE(NOW(), INTERVAL ? DAY) AND NOW()', [parseInt(lapse)])
+                
         let report = []
         let response = []
         let dates = syncConnection.query(`SELECT DATE(cal.date) AS date
