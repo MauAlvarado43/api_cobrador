@@ -351,7 +351,7 @@ router.post('/registerEmployee', (req, res) => {
         return
     }
 
-    if(type != 1) {
+    if(type != 1 && type!=2) {
         res.send({ code: 303, data: {} })
         return
     }

@@ -137,7 +137,7 @@ router.post('/getClients', (req, res) => {
 		if(typeRequest == 0)
 			query = 'SELECT * from cliente'
 		if(typeRequest == 1)
-			query = '(SELECT DISTINCT nom_cli, app_cli, apm_cli, curp_cli FROM cliente NATURAL JOIN prestamo WHERE id_cli NOT IN (SELECT id_cli FROM prestamo WHERE est_pre = 4 OR est_pre = 0 OR est_pre = 5)) UNION (SELECT nom_cli, app_cli, apm_cli, curp_cli from cliente LEFT JOIN prestamo ON cliente.id_cli = prestamo.id_cli WHERE prestamo.id_cli IS NULL)'
+			query = '(SELECT DISTINCT nom_cli, app_cli, apm_cli, curp_cli FROM cliente NATURAL JOIN prestamo WHERE id_cli NOT IN (SELECT id_cli FROM prestamo WHERE est_pre = 4 OR est_pre = 0 OR est_pre = 1  OR est_pre = 5)) UNION (SELECT nom_cli, app_cli, apm_cli, curp_cli from cliente LEFT JOIN prestamo ON cliente.id_cli = prestamo.id_cli WHERE prestamo.id_cli IS NULL)'
 		if(typeRequest == 2)
 			query = 'SELECT * from cliente LEFT JOIN prestamo ON cliente.id_cli = prestamo.id_cli WHERE prestamo.est_pre = 0'
 		if(typeRequest == 3) {
@@ -263,16 +263,43 @@ router.post('/requestLending', (req, res) => {
             }
             
             if(results.length == 0) {
-                connection.query('INSERT INTO prestamo (can_pre,fec_pre, tfec_pre,est_pre,com_pre,id_cli,id_suc) VALUES (?,?,DATE_ADD(?, INTERVAL ? DAY),?,?, (SELECT id_cli FROM cliente WHERE curp_cli = ?), (SELECT id_suc FROM empleado WHERE rfc_emp = ? AND pwd_emp = ?))', [amount, new Date(), new Date(), parseInt(lapse) + 1, state, comments, curp, rfc, password], (err, results, fields) => {
+
+                connection.query('SELECT * FROM cliente WHERE curp_cli = ?', [curp], (err, client, fields) => {
+
                     if(err) {
                         console.log(err)
                         res.send({ code: 401, data: {} })
                         return
                     }
-                    
-                    res.send({ code: 201, data: {} })
+
+                    if(client[0].sta_cli == 1) {
+                        state = 1
+                        comments += '\n' + 'Cliente registrado por cobrador'
+                    }
+
+                    connection.query('UPDATE cliente SET sta_cli = 0 WHERE curp_cli = ?', [curp], (err, results, fields) => {
                         
+                        if(err) {
+                            console.log(err)
+                            res.send({ code: 401, data: {} })
+                            return
+                        }
+
+                        connection.query('INSERT INTO prestamo (can_pre,fec_pre, tfec_pre,est_pre,com_pre,id_cli,id_suc) VALUES (?,?,DATE_ADD(?, INTERVAL ? DAY),?,?, (SELECT id_cli FROM cliente WHERE curp_cli = ?), (SELECT id_suc FROM empleado WHERE rfc_emp = ? AND pwd_emp = ?))', [amount, new Date(), new Date(), parseInt(lapse) + 1, state, comments, curp, rfc, password], (err, results, fields) => {
+                            if(err) {
+                                console.log(err)
+                                res.send({ code: 401, data: {} })
+                                return
+                            }
+                            
+                            res.send({ code: 201, data: {} })
+                                
+                        })
+
+                    })
+
                 })
+
             }
             else {
                 res.send({ code: 304, data: {} })
@@ -472,7 +499,6 @@ router.post('/getClientPayment', (req, res) => {
 
             let data = []
 			let payed = 0
-
 
             _results.forEach(lending => {
 				

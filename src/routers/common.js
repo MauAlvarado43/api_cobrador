@@ -1,8 +1,13 @@
 import {Router} from 'express'
 import connection from '../config/database'
 import { decryptAPI, encryptAPI, encryptBD, decryptBD, generateToken, validateToken } from '../utils/cipher'
+import syncConnection from '../config/syncDatabase'
 
 const router = Router()
+
+router.get('/test', (req, res) => {
+    res.send('')
+})
 
 router.get('/', (req, res) => {
     res.send('')

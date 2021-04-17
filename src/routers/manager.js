@@ -53,7 +53,7 @@ router.post('/registerClient', async (req,res) => {
         return
     }
 
-    if(type != 3) {
+    if(type != 3 && type != 4) {
         res.send({ code: 303, data: {} })
         return
     }
@@ -80,9 +80,11 @@ router.post('/registerClient', async (req,res) => {
 			await uploadFile(`src/files/document/${curp}_dom.png`)
 			await uploadFile(`src/files/ine/${curp}_ine.png`)
 
-			connection.query('INSERT INTO cliente (nom_cli, app_cli, apm_cli, curp_cli, tel_cli, cel_cli, est_cli, mun_cli, col_cli, st_cli, cp_cli, ext_cli, int_cli, fot_cli, cdom_cli, ine_cli, id_tip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 5)', [
+			let state = (results[0].id_tip == 4) ? 1 : 0
+
+			connection.query('INSERT INTO cliente (nom_cli, app_cli, apm_cli, curp_cli, tel_cli, cel_cli, est_cli, mun_cli, col_cli, st_cli, cp_cli, ext_cli, int_cli, fot_cli, cdom_cli, ine_cli, id_tip, sta_cli) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,5,?)', [
 			encryptBD(name), encryptBD(apat), encryptBD(amat), encryptBD(curp), encryptBD(tel), encryptBD(cel), encryptBD(est), encryptBD(mun), encryptBD(col),encryptBD(st), encryptBD(cp),
-			encryptBD(ext), encryptBD(_int), encryptBD(`${process.env.BUCKET_URL}/${curp}_client.png`), encryptBD(`${process.env.BUCKET_URL}/${curp}_dom.png`), encryptBD(`${process.env.BUCKET_URL}/${curp}_ine.png`)], (err, results, field) => {
+			encryptBD(ext), encryptBD(_int), encryptBD(`${process.env.BUCKET_URL}/${curp}_client.png`), encryptBD(`${process.env.BUCKET_URL}/${curp}_dom.png`), encryptBD(`${process.env.BUCKET_URL}/${curp}_ine.png`), state], (err, results, field) => {
 				
 				if(err) {
 					console.log(err)
