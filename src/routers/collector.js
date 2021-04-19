@@ -762,7 +762,7 @@ router.post('/getAssigned', (req, res) => {
 
 })
 
-router.post('/getAssigned', (req, res) => {
+router.post('/checkAssigned', (req, res) => {
 
     let id = decryptAPI(req.headers.id)
     let type = decryptAPI(req.headers.type)
