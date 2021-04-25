@@ -17,6 +17,7 @@ router.post('/generateReportLendings', async (req, res) => {
     let password = encryptBD(decryptAPI(req.headers.password))
 
     let lapse = decryptAPI(req.body.lapse)
+    let sucursal = decryptAPI(req.body.nom_suc)
     let save = req.body.save
 		
 	if(!validateToken(token)) {
@@ -58,7 +59,7 @@ router.post('/generateReportLendings', async (req, res) => {
 
         let report = []
         let response = []
-        let clients = syncConnection.query('SELECT id_pre, can_pre, DATE(fec_pre) as fec_pre, tfec_pre, nom_cli, app_cli, apm_cli FROM prestamo NATURAL JOIN cliente WHERE est_pre = 0;')
+        let clients = syncConnection.query('SELECT id_pre, can_pre, DATE(fec_pre) as fec_pre, tfec_pre, nom_cli, app_cli, apm_cli FROM prestamo NATURAL JOIN cliente NATURAL JOIN sucursal WHERE est_pre = 0 AND nom_suc = ?;', [sucursal])
     
         clients.forEach(client => {
     
@@ -198,8 +199,8 @@ router.post('/generateReportLendings', async (req, res) => {
                 str += '\n'
             }
 
-            let jsonName = `src/files/reports/${_results[0].nom_suc}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.json`
-            let csvName = `src/files/reports/${_results[0].nom_suc}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.csv`
+            let jsonName = `src/files/reports/${sucursal}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.json`
+            let csvName = `src/files/reports/${sucursal}___${new Date().toLocaleString().replace(/\//g, '_').replace(/\:/g,'.').replace(' ','__')}.csv`
 
             fs.writeFileSync(jsonName, JSON.stringify({data: response}), 'utf-8')
             fs.writeFileSync(csvName, str, 'utf-8')
@@ -213,7 +214,7 @@ router.post('/generateReportLendings', async (req, res) => {
 
 })
 
-router.post('/getEntriesEgress', (req, res) => {
+router.post('/getSucursals', (req, res) => {
 
     let id = decryptAPI(req.headers.id)
     let type = decryptAPI(req.headers.type)
@@ -258,14 +259,89 @@ router.post('/getEntriesEgress', (req, res) => {
             return
         }
 
-        connection.query('SELECT can_ing, fec_ing FROM ingreso WHERE id_suc = ? AND fec_ing BETWEEN DATE(NOW()) AND NOW()', [_results[0].id_suc], (err, entries, fields) => {
+        connection.query('SELECT * FROM sucursal ', [], (err, results, fields) => {
 
             if(err) {
                 res.send({ code: 401, data: {} })
                 return
             }
 
-            connection.query('SELECT can_egr, fec_egr FROM egreso WHERE id_suc = ? AND fec_egr BETWEEN DATE(NOW()) AND NOW()', [_results[0].id_suc], (err, egress, fields) => {
+            let response = []
+
+            results.forEach(element => {
+              
+                response.push({
+                    name: encryptAPI(element.nom_suc)
+                })
+
+            })
+
+            res.send({ 
+                code: 201, 
+                data: response
+            })
+
+        })
+
+    })
+
+})
+
+router.post('/getEntriesEgress', (req, res) => {
+
+    let id = decryptAPI(req.headers.id)
+    let type = decryptAPI(req.headers.type)
+    let token = decryptAPI(req.headers.token)
+    let rfc = encryptBD(decryptAPI(req.headers.rfc))
+    let password = encryptBD(decryptAPI(req.headers.password))
+
+    let sucursal = decryptAPI(req.body.nom_suc)
+		
+	if(!validateToken(token)) {
+        res.send({ code: 402, data: {} })
+        return
+    }
+
+    if(!id) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(!rfc) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(!password) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(type != 2 && type!=1) {
+        res.send({ code: 303, data: {} })
+        return
+    }
+
+    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+
+        if(err) {
+            res.send({ code: 401, data: {} })
+            return
+        }
+
+        if(_results.length != 1) {
+            res.send({ code: 301, data: {} })
+            return
+        }
+
+        connection.query('SELECT can_ing, fec_ing FROM ingreso NATURAL JOIN sucursal WHERE nom_suc = ? AND fec_ing BETWEEN DATE(NOW()) AND NOW()', [sucursal], (err, entries, fields) => {
+
+            if(err) {
+                res.send({ code: 401, data: {} })
+                return
+            }
+
+            connection.query('SELECT can_egr, fec_egr FROM egreso NATURAL JOIN sucursal WHERE nom_suc = ? AND fec_egr BETWEEN DATE(NOW()) AND NOW()', [sucursal], (err, egress, fields) => {
 
                 if(err) {
                     res.send({ code: 401, data: {} })
@@ -295,6 +371,8 @@ router.post('/getPaymentsSucursal', (req, res) => {
     let token = decryptAPI(req.headers.token)
     let rfc = encryptBD(decryptAPI(req.headers.rfc))
     let password = encryptBD(decryptAPI(req.headers.password))
+
+    let sucursal = decryptAPI(req.body.nom_suc)
 		
 	if(!validateToken(token)) {
         res.send({ code: 402, data: {} })
@@ -333,7 +411,7 @@ router.post('/getPaymentsSucursal', (req, res) => {
             return
         }
 
-        connection.query('SELECT * FROM pago NATURAL JOIN prestamo NATURAL JOIN cliente WHERE fec_pag BETWEEN DATE(NOW()) AND NOW() AND id_suc = ?', [_results[0].id_suc], (err, results, fields) => {
+        connection.query('SELECT * FROM pago NATURAL JOIN prestamo NATURAL JOIN cliente NATURAL JOIN sucursal WHERE fec_pag BETWEEN DATE(NOW()) AND NOW() AND nom_suc = ?', [sucursal], (err, results, fields) => {
 
             if(err) {
                 res.send({ code: 401, data: {} })

@@ -226,7 +226,7 @@ router.post('/getReportsName', async (req, res) => {
 
         files.forEach(file => {
           
-            if(file.name.split('.')[3] == 'json' && _results[0].nom_suc == file.name.split('___')[0]) {
+            if(file.name.split('.')[3] == 'json') {
 
                 filesResponse.push({
                     file: file.name,
@@ -257,6 +257,7 @@ router.post('/getAccountStatus', (req, res) => {
     let password = encryptBD(decryptAPI(req.headers.password))
 
     let lapse = req.body.lapse
+    let nom_suc = decryptAPI(req.body.nom_suc)
 		
 	if(!validateToken(token)) {
         res.send({ code: 402, data: {} })
@@ -283,7 +284,7 @@ router.post('/getAccountStatus', (req, res) => {
         return
     }
 
-    connection.query('SELECT * from empleado NATURAL JOIN SUCURSAL WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+    connection.query('SELECT * from empleado NATURAL JOIN sucursal WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
 
         if(err) {
             res.send({ code: 401, data: {} })
@@ -295,18 +296,17 @@ router.post('/getAccountStatus', (req, res) => {
             return
         }
 
-        let previousEntries = syncConnection.query('SELECT IFNULL(SUM(can_ing),0) AS sum FROM ingreso WHERE id_suc = ? AND fec_ing < DATE(SUBDATE(NOW(), INTERVAL ? DAY))', [_results[0].id_suc, parseInt(lapse)])
-        let previousEgress = syncConnection.query('SELECT IFNULL(SUM(can_egr),0) AS sum FROM egreso WHERE id_suc = ? AND fec_egr < DATE(SUBDATE(NOW(), INTERVAL ? DAY))', [_results[0].id_suc, parseInt(lapse)])
+        let previousEntries = syncConnection.query('SELECT IFNULL(SUM(can_ing),0) AS sum FROM ingreso NATURAL JOIN sucursal WHERE nom_suc = ? AND fec_ing < DATE(SUBDATE(NOW(), INTERVAL ? DAY))', [nom_suc, parseInt(lapse)])
+        let previousEgress = syncConnection.query('SELECT IFNULL(SUM(can_egr),0) AS sum FROM egreso NATURAL JOIN sucursal WHERE nom_suc = ? AND fec_egr < DATE(SUBDATE(NOW(), INTERVAL ? DAY))', [nom_suc, parseInt(lapse)])
 
-        let entries = syncConnection.query('SELECT can_ing, fec_ing FROM ingreso WHERE id_suc = ? AND fec_ing BETWEEN DATE(SUBDATE(NOW(), INTERVAL ? DAY)) AND NOW()', [_results[0].id_suc, parseInt(lapse)])
-        let egress = syncConnection.query('SELECT can_egr, fec_egr FROM egreso WHERE id_suc = ? AND fec_egr BETWEEN DATE(SUBDATE(NOW(), INTERVAL ? DAY)) AND NOW()', [_results[0].id_suc, parseInt(lapse)])
+        let entries = syncConnection.query('SELECT can_ing, fec_ing FROM ingreso NATURAL JOIN sucursal WHERE nom_suc = ? AND fec_ing BETWEEN DATE(SUBDATE(NOW(), INTERVAL ? DAY)) AND NOW()', [nom_suc, parseInt(lapse)])
+        let egress = syncConnection.query('SELECT can_egr, fec_egr FROM egreso NATURAL JOIN sucursal WHERE nom_suc = ? AND fec_egr BETWEEN DATE(SUBDATE(NOW(), INTERVAL ? DAY)) AND NOW()', [nom_suc, parseInt(lapse)])
 
         let totalPrevious = previousEntries[0].sum - previousEgress[0].sum
 
         res.send({
             code: 201, 
             data: {
-                sucursal: _results[0].nom_suc,
                 previous: totalPrevious,
                 entries: entries,
                 egress: egress
@@ -330,6 +330,7 @@ router.post('/registerEmployee', (req, res) => {
     let amat = encryptBD(decryptAPI(req.body.amat))
     let rfcEmp = encryptBD(decryptAPI(req.body.rfcEmp))
     let typeEmp = decryptAPI(req.body.typeEmp)
+    let nom_suc = decryptAPI(req.body.nom_suc)
 		
 	if(!validateToken(token)) {
         res.send({ code: 402, data: {} })
@@ -369,7 +370,72 @@ router.post('/registerEmployee', (req, res) => {
             return
         }
 
-        connection.query('INSERT INTO empleado (nom_emp, app_emp, apm_emp, rfc_emp, pwd_emp, id_tip, id_suc) VALUES (?,?,?,?,?,?,?)', [name, apat, amat, rfcEmp, rfcEmp, typeEmp, _results[0].id_suc], (err, results, fields) => {
+        connection.query('INSERT INTO empleado (nom_emp, app_emp, apm_emp, rfc_emp, pwd_emp, id_tip, id_suc) VALUES (?,?,?,?,?,?,(SELECT id_suc FROM sucursal WHERE nom_suc = ?))', [name, apat, amat, rfcEmp, rfcEmp, typeEmp, nom_suc], (err, results, fields) => {
+
+            if(err) {
+                console.log(err)
+                res.send({ code: 401, data: {} })
+                return
+            }
+
+            res.send({ code: 201, data: {} })
+
+        })
+
+    })
+
+})
+
+router.post('/registerSucursal', (req, res) => {
+
+    let id = decryptAPI(req.headers.id)
+    let type = decryptAPI(req.headers.type)
+    let token = decryptAPI(req.headers.token)
+    let rfc = encryptBD(decryptAPI(req.headers.rfc))
+    let password = encryptBD(decryptAPI(req.headers.password))
+
+    let name = decryptAPI(req.body.name)
+    let dom = decryptAPI(req.body.dom)
+		
+	if(!validateToken(token)) {
+        res.send({ code: 402, data: {} })
+        return
+    }
+
+    if(!id) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(!rfc) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(!password) {
+        res.send({ code: 302, data: {} })
+        return
+    }
+
+    if(type != 1 && type!=2) {
+        res.send({ code: 303, data: {} })
+        return
+    }
+
+    connection.query('SELECT * from empleado NATURAL JOIN sucursal WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], (err, _results, field) => {
+
+        if(err) {
+            console.log(err)
+            res.send({ code: 401, data: {} })
+            return
+        }
+
+        if(_results.length != 1) {
+            res.send({ code: 301, data: {} })
+            return
+        }
+
+        connection.query('INSERT INTO sucursal (nom_suc, dom_suc) VALUES (?,?)', [name, dom], (err, results, fields) => {
 
             if(err) {
                 console.log(err)
