@@ -21,6 +21,67 @@ const getType = (type) => {
 
 }
 
+const insertClientLending = async () => {
+
+    let clienteData = {
+        name: "VICTOR MANUEL",
+        apat: "ROMERO",
+        amat: "VILLEGAS",
+        curp: "ROVV910411HMCMLC05",
+        cp: "53580",
+        est: "CDMX",
+        mun: "NAUCALPAN DE JUAREZ",
+        col: "LOMA LINDA",
+        st: "NOGAL",
+        ext: "5",
+        _int: '0',
+        tel: 'Sin registro',
+        cel: 'Sin registro'
+    }
+
+    connection.query('INSERT INTO cliente (nom_cli, app_cli, apm_cli, curp_cli, tel_cli, cel_cli, est_cli, mun_cli, col_cli, st_cli, cp_cli, ext_cli, int_cli, cdom_cli, ine_cli, fot_cli, id_tip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,5)', [
+        encryptBD(clienteData.name), encryptBD(clienteData.apat), encryptBD(clienteData.amat), encryptBD(clienteData.curp), encryptBD(clienteData.tel),
+        encryptBD(clienteData.cel), encryptBD(clienteData.est), encryptBD(clienteData.mun), encryptBD(clienteData.col), encryptBD(clienteData.st),
+        encryptBD(clienteData.cp), encryptBD(clienteData.ext), encryptBD(clienteData._int), encryptBD("https://storage.googleapis.com/cobrador_bucket/descarga.png"),
+        encryptBD("https://storage.googleapis.com/cobrador_bucket/descarga.png"), encryptBD("https://storage.googleapis.com/cobrador_bucket/descarga.png")
+    ], (err, res, fields) => {
+
+        connection.query("INSERT INTO prestamo (can_pre, fec_pre, tfec_pre, est_pre, id_cli, id_suc) VALUES (?,?,?,?,?,1)", [
+            1000, "2021-04-23", "2021-05-08", 0, res.insertId
+        ], (err, res, fields) => {})
+
+    })
+
+}
+
+const insertEmployee = async () => {
+
+    let empleadoData = {
+        name: "Ricardo",
+        apat: "Fragozo",
+        amat: "",
+        rfc: "FACR780305HDFDC03",
+        type: getType("director")
+    }
+
+    connection.query('INSERT INTO empleado (nom_emp, app_emp, apm_emp, rfc_emp, pwd_emp, id_tip, id_suc) VALUES (?,?,?,?,?,?,?)', [encryptBD(empleadoData.name), encryptBD(empleadoData.apat), encryptBD(empleadoData.amat), encryptBD(empleadoData.rfc), encryptBD(empleadoData.rfc), empleadoData.type, 1], (err, res, fields) => {})
+
+}
+
+const getEmployees = async () => {
+
+    connection.query("SELECT * FROM empleado", [], (err, res, fields) => {
+
+        res.forEach(element => {
+            
+            console.log(decryptBD(element.nom_emp) + " - " + decryptBD(element.rfc_emp) + " - " + decryptBD(element.pwd_emp))
+
+        })
+
+    })
+
+}
+
 const loadData = async () => {
 
     let sucursal = fs.readFileSync(__dirname + '\\files\\backup\\sucursal.csv', 'utf-8').split(/\r?\n/)[1].split(',')
@@ -89,4 +150,4 @@ const loadData = async () => {
     
 }
 
-loadData()
+getEmployees()

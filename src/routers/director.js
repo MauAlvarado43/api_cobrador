@@ -8,6 +8,203 @@ import { uploadFile, deleteFile, listFiles, getFile } from '../utils/cloud'
 
 const router = Router()
 
+router.post('/deleteEmployee', (req, res) => {
+
+    let id = decryptAPI(req.headers.id)
+    let type = decryptAPI(req.headers.type)
+    let token = decryptAPI(req.headers.token)
+    let rfc = encryptBD(decryptAPI(req.headers.rfc))
+    let password = encryptBD(decryptAPI(req.headers.password))
+
+    let rfc_emp = encryptBD(decryptAPI(req.body.rfc))
+		
+	if(!validateToken(token)) {
+        res.send({code: 402, data: {}})
+        return
+    }
+
+    if(!id) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(!rfc) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(!password) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(type != 1 && type != 2) {
+        res.send({code: 303, data: {}})
+        return
+    }
+
+    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
+
+        if(err) {
+            res.send({code: 401, data: {}})
+            return
+        }
+
+        if(_results.length != 1) {
+            res.send({code: 301, data: {}})
+            return
+        }
+
+        connection.query('DELETE FROM empleado WHERE rfc_emp = ?', [rfc_emp], () => {
+
+            if(err) {
+                res.send({code: 401, data: {}})
+                return
+            }
+
+            res.send({code: 201, data: {}})
+
+        })
+
+    })
+
+})
+
+router.post('/resetPassword', (req, res) => {
+
+    let id = decryptAPI(req.headers.id)
+    let type = decryptAPI(req.headers.type)
+    let token = decryptAPI(req.headers.token)
+    let rfc = encryptBD(decryptAPI(req.headers.rfc))
+    let password = encryptBD(decryptAPI(req.headers.password))
+
+    let rfc_emp = encryptBD(decryptAPI(req.body.rfc))
+		
+	if(!validateToken(token)) {
+        res.send({code: 402, data: {}})
+        return
+    }
+
+    if(!id) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(!rfc) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(!password) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(type != 1 && type != 2) {
+        res.send({code: 303, data: {}})
+        return
+    }
+
+    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
+
+        if(err) {
+            res.send({code: 401, data: {}})
+            return
+        }
+
+        if(_results.length != 1) {
+            res.send({code: 301, data: {}})
+            return
+        }
+
+        connection.query('UPDATE empleado SET pwd_emp = (SELECT rfc_emp FROM empleado WHERE rfc_emp = ?) WHERE rfc_emp = ?', [rfc_emp], () => {
+
+            if(err) {
+                res.send({code: 401, data: {}})
+                return
+            }
+
+            res.send({code: 201, data: {}})
+
+        })
+
+    })
+
+})
+
+router.post('/getEmployees', (req, res) => {
+
+    let id = decryptAPI(req.headers.id)
+    let type = decryptAPI(req.headers.type)
+    let token = decryptAPI(req.headers.token)
+    let rfc = encryptBD(decryptAPI(req.headers.rfc))
+    let password = encryptBD(decryptAPI(req.headers.password))
+		
+	if(!validateToken(token)) {
+        res.send({code: 402, data: {}})
+        return
+    }
+
+    if(!id) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(!rfc) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(!password) {
+        res.send({code: 302, data: {}})
+        return
+    }
+
+    if(type != 1 && type != 2) {
+        res.send({code: 303, data: {}})
+        return
+    }
+
+    connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
+
+        if(err) {
+            res.send({code: 401, data: {}})
+            return
+        }
+
+        if(_results.length != 1) {
+            res.send({code: 301, data: {}})
+            return
+        }
+
+        connection.query('SELECT * FROM empleado', [], (err, results, fields) => {
+
+            if(err) {
+                res.send({code: 401, data: {}})
+                return
+            }
+
+            let response = []
+
+            results.forEach(element => {
+              
+                response.push({
+                    name: encryptAPI(decryptBD(element.nom_emp)),
+                    apat: encryptAPI(decryptBD(element.app_emp)),
+                    amat: encryptAPI(decryptBD(element.apm_emp)),
+                    rfc: encryptAPI(decryptBD(element.rfc_emp))
+                })
+
+            })
+
+            res.send({code: 201, data: response})
+
+        })
+
+    })
+    
+})
+
 router.post('/deleteReport', async (req, res) => {
 
     let id = decryptAPI(req.headers.id)
