@@ -577,7 +577,7 @@ router.post('/requestIncreaseDate', (req, res) => {
             return
 		}
 		
-		connection.query('SELECT id_pre FROM prestamo NATURAL JOIN cliente  WHERE curp_cli = ?', [curp], (err, results, fields) => {
+		connection.query('SELECT id_pre FROM prestamo NATURAL JOIN cliente WHERE curp_cli = ? AND est_pre = 0', [curp], (err, results, fields) => {
 			
 			if(err) {
 				console.log(err)
@@ -746,7 +746,7 @@ router.post('/getAssigned', (req, res) => {
 
             assigned.forEach(element => {
                 response.push({
-                    id: encryptAPI(element.id_asi.toString()),
+                    id: element.id_asi.toString(),
                     name: encryptAPI(decryptBD(element.nom_cli) + " " + decryptBD(element.app_cli) + " " + decryptBD(element.apm_cli)),
                     cel: encryptAPI(decryptBD(element.cel_cli)),
                     tel: encryptAPI(decryptBD(element.tel_cli)),
@@ -809,8 +809,10 @@ router.post('/checkAssigned', (req, res) => {
             res.send({ code: 301, data: {} })
             return
 		}
+
+        console.log(_id)
         
-        connection.query('UPDATE asignaicion SET est_asi = 1 WHERE id_Asi = ?', [_id], (err, results, field) => {
+        connection.query('UPDATE asignacion SET est_asi = 1 WHERE id_asi = ?', [_id], (err, results, field) => {
 
             if(err) {
                 console.log(err)

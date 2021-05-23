@@ -18,11 +18,11 @@ router.post('/loginUser', async (req, res) => {
     let rfc = encryptBD(decryptAPI(req.body.rfc))
     let pwd = encryptBD(decryptAPI(req.body.password))
 
-    // s connection.query("INSERT INTO sucursal (nom_suc, dom_suc) VALUES ('Sucursal 1', 'Domicilio 1')")
+    // connection.query("INSERT INTO sucursal (nom_suc, dom_suc) VALUES ('Sucursal 1', 'Domicilio 1')")
 
-    //  connection.query("INSERT INTO empleado (nom_emp, app_emp, apm_emp, rfc_emp, pwd_emp, id_tip, id_suc) values (?,?,?,?,?,?,?)", [
-    //     encryptBD("Mauricio"), encryptBD("Alvarado"), encryptBD("Lopez"), encryptBD("AALM020115"), encryptBD("AALM020115"), 4, 1
-    //  ])
+    // connection.query("INSERT INTO empleado (nom_emp, app_emp, apm_emp, rfc_emp, pwd_emp, id_tip, id_suc) values (?,?,?,?,?,?,?)", [
+    //     encryptBD("Mauricio"), encryptBD("Alvarado"), encryptBD("Lopez"), encryptBD("AALM020115"), encryptBD("AALM020115"), 1, 6
+    // ])
 
     connection.query("SELECT * from empleado WHERE pwd_emp = ? AND rfc_emp = ?" , [pwd, rfc], (err, results, field) => {
 

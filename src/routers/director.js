@@ -78,7 +78,7 @@ router.post('/resetPassword', (req, res) => {
     let rfc = encryptBD(decryptAPI(req.headers.rfc))
     let password = encryptBD(decryptAPI(req.headers.password))
 
-    let rfc_emp = encryptBD(decryptAPI(req.body.rfc))
+    let rfc_emp = encryptBD(decryptAPI(req.body.rfc_emp))
 		
 	if(!validateToken(token)) {
         res.send({code: 402, data: {}})
@@ -108,6 +108,7 @@ router.post('/resetPassword', (req, res) => {
     connection.query('SELECT * from empleado WHERE id_emp = ? AND id_tip = ? AND rfc_emp = ? AND pwd_emp = ?', [id, type, rfc, password], async (err, _results, field) => {
 
         if(err) {
+            console.log(err)
             res.send({code: 401, data: {}})
             return
         }
@@ -117,9 +118,10 @@ router.post('/resetPassword', (req, res) => {
             return
         }
 
-        connection.query('UPDATE empleado SET pwd_emp = (SELECT rfc_emp FROM empleado WHERE rfc_emp = ?) WHERE rfc_emp = ?', [rfc_emp], () => {
+        connection.query('UPDATE empleado SET pwd_emp = ? WHERE rfc_emp = ?', [rfc_emp, rfc_emp], (err, results, field) => {
 
             if(err) {
+                console.log(err)
                 res.send({code: 401, data: {}})
                 return
             }
